@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% from "_macros.html" import field, csrf, badge, empty %}
+{% set title = 'Watchlist' %}{% set crumbs = [('Administration', None), ('Watchlist', None)] %}
+{% block content %}
+<div class="alert alert-info small">Entries only trigger a <b>warning</b> at registration and gate verification. A name/phone match is never an automatic denial - security must verify identity, and any override is audit-logged. Keep data minimal and review regularly.</div>
+<div class="row g-3"><div class="col-lg-4"><div class="card"><div class="card-header">Add entry</div><div class="card-body">
+<form method="post" novalidate>{{ form.hidden_tag() }}{% for f in form if f.type != 'CSRFTokenField' %}{{ field(f) }}{% endfor %}<button class="btn btn-primary">Save</button></form></div></div></div>
+<div class="col-lg-8"><div class="card"><div class="table-responsive"><table class="table mb-0 align-middle small"><thead><tr><th>Person</th><th>Level</th><th>Reason</th><th>Review by</th><th></th></tr></thead><tbody>
+{% for r in rows %}<tr class="{{ '' if r.active else 'text-muted' }}"><td>{{ r.full_name }}<div class="text-muted">{{ r.mobile or '' }}</div></td><td>{{ badge(r.level) }}{% if not r.active %} <span class="badge bg-secondary">lifted</span>{% endif %}</td>
+<td>{{ r.reason }}{% if r.review_note %}<div class="text-muted">Last review: {{ r.review_note }}</div>{% endif %}</td>
+<td>{{ r.review_date|d }}{% if r.review_date and r.review_date < today %} <span class="badge bg-warning text-dark">expired</span>{% endif %}</td>
+<td>{% if r.active %}<button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#r{{ r.id }}">Review</button>{% endif %}</td></tr>
+{% else %}<tr><td colspan="5">{{ empty('shield-check','No entries.') }}</td></tr>{% endfor %}</tbody></table></div></div></div></div>
+{% for r in rows if r.active %}<div class="modal fade" id="r{{ r.id }}" tabindex="-1"><div class="modal-dialog"><form class="modal-content" method="post" action="{{ url_for('admin.restriction_review', rid=r.id) }}">{{ csrf() }}
+<div class="modal-header"><h5 class="modal-title">Review: {{ r.full_name }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body"><label class="form-label">Decision</label><select name="action" class="form-select mb-2"><option value="extend">Keep (extend review date)</option><option value="lift">Lift restriction</option></select>
+<label class="form-label">New review date (if keeping)</label><input type="date" name="review_date" class="form-control mb-2"><label class="form-label">Review note (required)</label><input name="note" class="form-control" required minlength="5"></div>
+<div class="modal-footer"><button class="btn btn-primary">Record review</button></div></form></div></div>{% endfor %}
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% from "_macros.html" import badge, csrf %}
+{% set title = 'Gate Pass' %}{% set crumbs = [('Visitors', url_for('visitors.list_')), (req.request_no, url_for('visitors.detail', req_id=req.id)), ('Gate pass', None)] %}
+{% block content %}
+<div class="card pass-card"><div class="card-body text-center">
+  <div class="text-uppercase small text-muted">{{ org_name }}</div><h5 style="color:var(--navy)">VISITOR GATE PASS</h5>
+  {% if qr %}<img src="{{ qr }}" alt="QR code" style="width:220px;height:220px">
+  {% else %}<div class="py-5 text-muted"><i class="bi bi-slash-circle display-4"></i><div>QR unavailable ({{ gp.status }})</div></div>{% endif %}
+  <h4 class="mt-2 mb-0">{{ req.visitor.full_name }}</h4><div class="text-muted">{{ req.visitor.company or '' }}</div>
+  <div class="my-2">{{ badge(gp.status) }}</div>
+  <table class="table table-sm text-start small mb-0"><tr><th>Pass no.</th><td>{{ gp.pass_no }}</td></tr>
+   <tr><th>Host</th><td>{{ req.host.name }} · {{ req.department.name }}</td></tr>
+   <tr><th>Date</th><td>{{ req.visit_date|d }}, {{ req.expected_arrival|t }}–{{ req.expected_departure|t }}</td></tr>
+   <tr><th>Valid until</th><td>{{ gp.valid_until|dt }}</td></tr>
+   {% if gp.revoke_reason %}<tr><th>Revoked</th><td>{{ gp.revoke_reason }}</td></tr>{% endif %}</table>
+  <div class="small text-muted mt-2">Present this pass and photo ID at the gate. Valid for a single visit.</div>
+</div></div>
+<div class="text-center mt-3 d-flex justify-content-center flex-wrap gap-2 no-print">
+  <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+  {% if gp.status == 'active' %}
+  <form method="post" action="{{ url_for('visitors.pass_email', req_id=req.id) }}">{{ csrf() }}<button class="btn btn-outline-primary"><i class="bi bi-envelope"></i> Email to visitor</button></form>
+  {% if current_user.role in ('admin','receptionist') %}<form method="post" action="{{ url_for('visitors.pass_reissue', req_id=req.id) }}" data-confirm="Issue a new QR? Existing QR codes stop working.">{{ csrf() }}<button class="btn btn-outline-secondary">Reissue QR</button></form>{% endif %}
+  <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#revokeModal">Revoke</button>{% endif %}
+</div>
+<div class="modal fade" id="revokeModal" tabindex="-1"><div class="modal-dialog"><form class="modal-content" method="post" action="{{ url_for('visitors.pass_revoke', req_id=req.id) }}">{{ csrf() }}
+ <div class="modal-header"><h5 class="modal-title">Revoke pass</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+ <div class="modal-body"><label class="form-label">Reason (required)</label><input name="reason" class="form-control" required minlength="3"></div>
+ <div class="modal-footer"><button class="btn btn-danger">Revoke</button></div></form></div></div>
+{% endblock %}

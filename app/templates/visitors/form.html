@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% from "_macros.html" import field %}
+{% set crumbs = [('Visitors', url_for('visitors.list_')), (title, None)] %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" novalidate>{{ form.hidden_tag() }}
+<div class="row g-3">
+ <div class="col-lg-6"><div class="card"><div class="card-header">Visitor details</div><div class="card-body">
+   {{ field(form.full_name) }}{{ field(form.mobile) }}{{ field(form.email) }}{{ field(form.company) }}{{ field(form.category) }}
+   {{ field(form.photo) }}{{ field(form.vehicle_no) }}{{ field(form.document_ref) }}
+ </div></div></div>
+ <div class="col-lg-6"><div class="card"><div class="card-header">Visit details</div><div class="card-body">
+   {% if current_user.role == 'host' %}<div class="mb-3"><label class="form-label">Person to meet</label><input class="form-control" value="{{ current_user.name }}" disabled></div>
+   {% else %}{{ field(form.host_id) }}{% endif %}
+   {{ field(form.department_id) }}{{ field(form.purpose) }}
+   {% if walkin %}<div class="mb-3"><label class="form-label">Visit date</label><input class="form-control" value="Today" disabled>
+     <div class="d-none">{{ form.visit_date() }}</div></div>{% else %}{{ field(form.visit_date) }}{% endif %}
+   <div class="row"><div class="col">{{ field(form.expected_arrival) }}</div><div class="col">{{ field(form.expected_departure) }}</div></div>
+   {{ field(form.companions) }}{{ field(form.group_members) }}
+ </div></div></div>
+</div>
+<div class="card mt-3"><div class="card-body">{{ field(form.consent) }}
+  <div class="d-flex gap-2">
+   {% if walkin %}<button name="action" value="submit" class="btn btn-primary">Register walk-in</button>
+   {% else %}<button name="action" value="submit" class="btn btn-primary">Save &amp; submit for approval</button>
+   <button name="action" value="draft" class="btn btn-outline-primary">Save as draft</button>{% endif %}
+   <a href="{{ url_for('visitors.list_') }}" class="btn btn-light">Cancel</a></div></div></div>
+</form>
+{% endblock %}

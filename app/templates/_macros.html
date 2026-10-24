@@ -1,0 +1,36 @@
+{% macro badge(s) -%}
+{%- set m = {'draft':'secondary','pending':'warning text-dark','approved':'success','rejected':'danger','cancelled':'dark',
+ 'scheduled':'info text-dark','checked_in':'primary','checked_out':'success','missed':'danger','active':'success','used':'secondary',
+ 'revoked':'danger','expired':'dark','watchlist':'warning text-dark','blacklist':'danger'} -%}
+<span class="badge bg-{{ m.get(s, 'secondary') }}">{{ s|replace('_',' ')|title }}</span>
+{%- endmacro %}
+
+{% macro field(f) -%}
+<div class="mb-3">
+{% if f.type == 'BooleanField' %}
+  <div class="form-check">{{ f(class_='form-check-input' ~ (' is-invalid' if f.errors else '')) }}
+  <label class="form-check-label" for="{{ f.id }}">{{ f.label.text }}</label></div>
+{% else %}
+  <label class="form-label" for="{{ f.id }}">{{ f.label.text }}{% if f.flags.required %} <span class="text-danger">*</span>{% endif %}</label>
+  {{ f(class_=('form-select' if f.type in ('SelectField',) else 'form-control') ~ (' is-invalid' if f.errors else '')) }}
+{% endif %}
+{% for e in f.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro pager(pg) -%}
+{% if pg.pages > 1 %}
+<nav class="mt-3"><ul class="pagination pagination-sm mb-0">
+{% for p in pg.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+  {% if p %}<li class="page-item {{ 'active' if p == pg.page }}"><a class="page-link"
+    href="{{ url_for(request.endpoint, **dict(request.view_args or {}, **dict(request.args.to_dict(), page=p))) }}">{{ p }}</a></li>
+  {% else %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+{% endfor %}</ul></nav>
+{% endif %}
+{%- endmacro %}
+
+{% macro csrf() -%}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{%- endmacro %}
+
+{% macro empty(icon, text) -%}
+<div class="empty-state"><i class="bi bi-{{ icon }}"></i><p class="mt-2 mb-0">{{ text }}</p></div>
+{%- endmacro %}

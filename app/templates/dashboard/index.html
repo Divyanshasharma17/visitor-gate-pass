@@ -1,0 +1,57 @@
+{% extends "base.html" %}{% from "_macros.html" import badge, empty %}
+{% set title = 'Dashboard' %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>{% endblock %}
+{% block content %}
+{% set r = current_user.role %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+  <div><h4 class="mb-0" style="color:var(--navy)">Welcome, {{ current_user.name.split(' ')[0] }}</h4>
+  <div class="text-muted small">{{ {'admin':'Administrator overview','receptionist':'Front desk overview','host':'Your visitors','guard':'Gate overview'}[r] }}</div></div>
+  <div class="d-flex gap-2 mt-2 mt-md-0">
+    {% if r in ('admin','receptionist','host') %}<a class="btn btn-primary" href="{{ url_for('visitors.new') }}"><i class="bi bi-person-plus"></i> Register</a>{% endif %}
+    {% if r in ('admin','receptionist') %}<a class="btn btn-outline-primary" href="{{ url_for('visitors.walkin') }}"><i class="bi bi-door-open"></i> Walk-in</a>{% endif %}
+    {% if r in ('admin','host') %}<a class="btn btn-outline-primary" href="{{ url_for('approvals.inbox') }}"><i class="bi bi-inbox"></i> Approvals</a>{% endif %}
+    {% if r in ('admin','guard','receptionist') %}<a class="btn btn-outline-primary" href="{{ url_for('gate.verify') }}"><i class="bi bi-qr-code-scan"></i> Verify pass</a>{% endif %}
+  </div>
+</div>
+{% set cards = [('Total visitors today', stats.total_today, 'people'), ('Expected today', stats.expected, 'calendar-check'),
+  ('Currently inside', stats.inside, 'building-check'), ('Checked out today', stats.checked_out, 'box-arrow-right'),
+  ('Pending approvals', stats.pending, 'hourglass-split'), ('Rejected (30d)', stats.rejected, 'x-octagon')] %}
+<div class="row g-3 mb-3">{% for label, v, icon in cards %}
+  <div class="col-6 col-md-4 col-xl-2"><div class="card stat-card"><div class="stat-icon"><i class="bi bi-{{ icon }}"></i></div>
+  <div><div class="stat-value">{{ v }}</div><div class="stat-label">{{ label }}</div></div></div></div>{% endfor %}</div>
+
+{% if pending_for_me %}<div class="alert alert-warning d-flex justify-content-between align-items-center">
+  <span><i class="bi bi-bell"></i> {{ pending_for_me|length }} request(s) awaiting approval.</span>
+  <a class="btn btn-sm btn-warning" href="{{ url_for('approvals.inbox') }}">Review</a></div>{% endif %}
+
+{% if r != 'guard' %}
+<div class="row g-3 mb-3">
+  <div class="col-lg-5"><div class="card h-100"><div class="card-header">Daily trend (14 days)</div><div class="card-body"><canvas id="cDaily" height="200"></canvas></div></div></div>
+  <div class="col-lg-4"><div class="card h-100"><div class="card-header">Monthly trend</div><div class="card-body"><canvas id="cMonthly" height="240"></canvas></div></div></div>
+  <div class="col-lg-3"><div class="card h-100"><div class="card-header">By department (30d)</div><div class="card-body">
+    {% if dept.labels %}<canvas id="cDept" height="240"></canvas>{% else %}{{ empty('pie-chart','No data yet.') }}{% endif %}</div></div></div>
+</div>
+{% endif %}
+<div class="row g-3">
+  <div class="col-lg-7"><div class="card"><div class="card-header">Recent visit requests</div><div class="table-responsive">
+  <table class="table table-hover mb-0 align-middle"><thead><tr><th>Request</th><th>Visitor</th><th>Host</th><th>Date</th><th>Status</th></tr></thead><tbody>
+  {% for q in recent %}<tr><td><a href="{{ url_for('visitors.detail', req_id=q.id) if r != 'guard' else '#' }}">{{ q.request_no }}</a></td>
+    <td>{{ q.visitor.full_name }}</td><td>{{ q.host.name }}</td><td>{{ q.visit_date|d }}</td>
+    <td>{{ badge(q.approval_status) }} {{ badge(q.visit_status) }}</td></tr>
+  {% else %}<tr><td colspan="5">{{ empty('inbox','No visits yet.') }}</td></tr>{% endfor %}</tbody></table></div></div></div>
+  <div class="col-lg-5"><div class="card"><div class="card-header">Recent gate activity</div><ul class="list-group list-group-flush">
+  {% for l in recent_logs %}<li class="list-group-item small"><b>{{ l.request.visitor.full_name }}</b>
+    {% if l.exit_time %}left at {{ l.exit_time|t }}{% else %}entered at {{ l.entry_time|t }}{% endif %}
+    <span class="text-muted">· {{ l.request.host.name }}</span></li>
+  {% else %}<li class="list-group-item">{{ empty('door-closed','No gate activity.') }}</li>{% endfor %}</ul></div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if current_user.role != 'guard' %}
+<script>
+const teal='#149B91', navy='#17324D';
+new Chart(document.getElementById('cDaily'),{type:'line',data:{labels:{{ daily.labels|tojson }},datasets:[{label:'Visitors',data:{{ daily.data|tojson }},borderColor:teal,backgroundColor:'rgba(20,155,145,.15)',fill:true,tension:.3}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+new Chart(document.getElementById('cMonthly'),{type:'bar',data:{labels:{{ monthly.labels|tojson }},datasets:[{label:'Visitors',data:{{ monthly.data|tojson }},backgroundColor:navy}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+{% if dept.labels %}new Chart(document.getElementById('cDept'),{type:'doughnut',data:{labels:{{ dept.labels|tojson }},datasets:[{data:{{ dept.data|tojson }},backgroundColor:[navy,teal,'#5B8DB8','#8FD3CC','#F2B544','#C96A6A']}]},options:{plugins:{legend:{position:'bottom'}}}});{% endif %}
+</script>{% endif %}
+{% endblock %}

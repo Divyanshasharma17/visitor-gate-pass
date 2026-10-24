@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% from "_macros.html" import field %}
+{% block content %}
+<div class="card"><div class="card-body p-4"><h5>Choose a new password</h5>
+  <form method="post" novalidate>{{ form.hidden_tag() }}{{ field(form.password) }}{{ field(form.confirm) }}
+    <button class="btn btn-primary w-100">Update password</button></form></div></div>
+{% endblock %}

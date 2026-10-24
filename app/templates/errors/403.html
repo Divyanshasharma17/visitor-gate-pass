@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center py-5">
+  <h1 class="display-1 fw-bold" style="color:var(--navy)">403</h1>
+  <h4>Access denied</h4>
+  <p class="text-muted">{{ message|default("You do not have permission to view this page.") }}</p>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">Back to dashboard</a>
+</div>
+{% endblock %}

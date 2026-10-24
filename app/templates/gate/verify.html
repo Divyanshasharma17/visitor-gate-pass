@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf %}
+{% set title = 'Gate Verification' %}{% set crumbs = [('Gate verification', None)] %}
+{% block content %}
+<div class="row g-3">
+ <div class="col-lg-5"><div class="card"><div class="card-header">Scan or enter pass</div><div class="card-body">
+  <div class="scan-box d-none mb-3"><video id="video" playsinline muted></video><div class="scan-frame"></div></div>
+  <button class="btn btn-primary mb-1" id="camBtn" type="button"><i class="bi bi-camera"></i> Start camera scan</button>
+  <div class="small text-danger" id="camMsg"></div><hr>
+  <form id="lookupForm"><label class="form-label">Manual pass number (e.g. GP-240101-ABC123)</label>
+   <div class="input-group"><input id="codeInput" class="form-control" autocomplete="off" placeholder="Pass number or scanned code"><button class="btn btn-outline-primary">Verify</button></div></form>
+  <hr><button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reportModal"><i class="bi bi-flag"></i> Report suspicious activity</button>
+ </div></div></div>
+ <div class="col-lg-7"><div id="result"><div class="text-muted text-center py-5"><i class="bi bi-qr-code-scan display-3"></i><p>Scan a QR code or enter a pass number to begin.</p></div></div></div>
+</div>
+<div class="modal fade" id="reportModal" tabindex="-1"><div class="modal-dialog"><form class="modal-content" method="post" action="{{ url_for('gate.report_suspicious') }}">{{ csrf() }}
+ <div class="modal-header"><h5 class="modal-title">Report suspicious / unauthorized access</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+ <div class="modal-body"><textarea name="description" class="form-control" rows="4" required minlength="5" placeholder="Describe what happened (do not include sensitive IDs)"></textarea></div>
+ <div class="modal-footer"><button class="btn btn-danger">Send report</button></div></form></div></div>
+{% endblock %}
+{% block scripts %}<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script><script src="{{ url_for('static', filename='js/gate.js') }}"></script>{% endblock %}

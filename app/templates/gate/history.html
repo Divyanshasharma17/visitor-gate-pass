@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% from "_macros.html" import pager, empty, csrf %}
+{% set title = 'Entry/Exit History' %}{% set crumbs = [('Gate', None), ('History', None)] %}
+{% block content %}
+<div class="card"><div class="card-header d-flex justify-content-between">Entry / exit history
+ <form class="d-flex gap-2" method="get"><input name="q" class="form-control form-control-sm" placeholder="Visitor or request no" value="{{ request.args.get('q','') }}"><button class="btn btn-sm btn-outline-primary">Search</button></form></div>
+<div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+<thead><tr><th>Visitor</th><th>Request</th><th>Entry</th><th>Exit</th><th>Duration</th><th>Guard</th><th>Notes</th><th></th></tr></thead><tbody>
+{% for l in pg.items %}<tr><td>{{ l.request.visitor.full_name }}</td><td>{{ l.request.request_no }}</td><td>{{ l.entry_time|dt }}</td><td>{{ l.exit_time|dt }}</td>
+<td>{{ (l.duration_minutes ~ ' min') if l.duration_minutes is not none else '-' }}</td><td>{{ l.entry_guard.name if l.entry_guard else '-' }}</td>
+<td class="small text-muted">{{ ('Corrected: ' ~ l.correction_reason) if l.correction_reason }}</td>
+<td>{% if current_user.role == 'admin' %}<button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#c{{ l.id }}">Correct</button>{% endif %}</td></tr>
+{% else %}<tr><td colspan="8">{{ empty('clock-history','No entries recorded.') }}</td></tr>{% endfor %}</tbody></table></div></div>{{ pager(pg) }}
+{% if current_user.role == 'admin' %}{% for l in pg.items %}
+<div class="modal fade" id="c{{ l.id }}" tabindex="-1"><div class="modal-dialog"><form class="modal-content" method="post" action="{{ url_for('gate.correct', req_id=l.request_id) }}">{{ csrf() }}
+ <div class="modal-header"><h5 class="modal-title">Correct record</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+ <div class="modal-body"><label class="form-label">Entry time</label><input type="datetime-local" name="entry_time" class="form-control mb-2" value="{{ l.entry_time.strftime('%Y-%m-%dT%H:%M') if l.entry_time }}">
+ <label class="form-label">Exit time</label><input type="datetime-local" name="exit_time" class="form-control mb-2" value="{{ l.exit_time.strftime('%Y-%m-%dT%H:%M') if l.exit_time }}">
+ <label class="form-label">Reason (required)</label><input name="reason" class="form-control" required minlength="5"></div>
+ <div class="modal-footer"><button class="btn btn-primary">Save correction</button></div></form></div></div>{% endfor %}{% endif %}
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% from "_macros.html" import empty, csrf %}
+{% set title = 'Currently Inside' %}{% set crumbs = [('Gate', None), ('Currently inside', None)] %}
+{% block content %}
+<div class="card"><div class="card-header d-flex justify-content-between align-items-center">Currently inside <span class="badge bg-primary">{{ rows|length }}</span>
+ <input class="form-control form-control-sm w-auto" placeholder="Filter…" data-table-filter="#tbl"></div>
+<div class="table-responsive"><table id="tbl" class="table table-hover mb-0 align-middle">
+<thead><tr><th>Visitor</th><th>Host</th><th>Pass</th><th>Entered</th><th>Expected exit</th><th>Vehicle</th><th></th></tr></thead><tbody>
+{% for q in rows %}<tr class="{{ 'table-warning' if q.id in overdue }}"><td>{{ q.visitor.full_name }}<div class="small text-muted">{{ q.visitor.company or '' }} (+{{ q.companions }})</div></td>
+<td>{{ q.host.name }}</td><td>{{ q.gate_pass.pass_no }}</td><td>{{ q.log.entry_time|dt }}</td>
+<td>{{ q.expected_departure|t }} {% if q.id in overdue %}<span class="badge bg-warning text-dark">Overdue / open</span>{% endif %}</td><td>{{ q.vehicle_no or '-' }}</td>
+<td class="text-end">{% if current_user.role == 'admin' %}<button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#f{{ q.id }}">Force exit</button>{% endif %}</td></tr>
+{% else %}<tr><td colspan="7">{{ empty('building','No visitors are currently inside.') }}</td></tr>{% endfor %}</tbody></table></div></div>
+{% if current_user.role == 'admin' %}{% for q in rows %}
+<div class="modal fade" id="f{{ q.id }}" tabindex="-1"><div class="modal-dialog"><form class="modal-content" method="post" action="{{ url_for('gate.correct', req_id=q.id) }}">{{ csrf() }}
+ <input type="hidden" name="force_checkout" value="1"><input type="hidden" name="next" value="{{ url_for('gate.inside') }}">
+ <div class="modal-header"><h5 class="modal-title">Force check-out {{ q.visitor.full_name }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+ <div class="modal-body"><label class="form-label">Reason (required, audited)</label><input name="reason" class="form-control" required minlength="5"></div>
+ <div class="modal-footer"><button class="btn btn-primary">Close open visit</button></div></form></div></div>{% endfor %}{% endif %}
+{% endblock %}

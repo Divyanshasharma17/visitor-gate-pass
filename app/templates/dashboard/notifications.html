@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "_macros.html" import pager, empty, csrf %}
+{% set title = 'Notifications' %}{% set crumbs = [('Notifications', None)] %}
+{% block content %}
+<div class="card"><div class="card-header d-flex justify-content-between">Notifications
+  <form method="post" action="{{ url_for('dashboard.read_all') }}">{{ csrf() }}<button class="btn btn-sm btn-outline-primary">Mark all read</button></form></div>
+<div class="list-group list-group-flush">
+{% for n in pg.items %}
+  <a class="list-group-item list-group-item-action {{ 'fw-semibold' if not n.is_read }}" href="{{ url_for('dashboard.open_notification', nid=n.id) }}">
+    {{ n.message }}<div class="small text-muted">{{ n.created_at|dt }}</div></a>
+{% else %}{{ empty('bell-slash', 'You have no notifications.') }}{% endfor %}
+</div></div>{{ pager(pg) }}
+{% endblock %}

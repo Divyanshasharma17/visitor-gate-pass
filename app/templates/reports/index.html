@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% from "_macros.html" import empty %}
+{% set crumbs = [('Reports', None)] %}
+{% block content %}
+<div class="card mb-3 no-print"><div class="card-body"><form class="row g-2 align-items-end" method="get">
+ <div class="col-md-3"><label class="form-label small">Report</label><select name="type" class="form-select">{% for k, v in types.items() %}<option value="{{ k }}" {{ 'selected' if k == rtype }}>{{ v }}</option>{% endfor %}</select></div>
+ {% if rtype != 'inside' %}<div class="col-md-2"><label class="form-label small">From</label><input type="date" name="from" class="form-control" value="{{ request.args.get('from','') }}"></div>
+ <div class="col-md-2"><label class="form-label small">To</label><input type="date" name="to" class="form-control" value="{{ request.args.get('to','') }}"></div>{% endif %}
+ {% if current_user.role != 'guard' %}
+ <div class="col-md-2"><label class="form-label small">Department</label><select name="department_id" class="form-select"><option value="">All</option>{% for d in departments %}<option value="{{ d.id }}" {{ 'selected' if request.args.get('department_id')|string == d.id|string }}>{{ d.name }}</option>{% endfor %}</select></div>
+ {% if current_user.role != 'host' %}<div class="col-md-2"><label class="form-label small">Host</label><select name="host_id" class="form-select"><option value="">All</option>{% for h in hosts %}<option value="{{ h.id }}" {{ 'selected' if request.args.get('host_id')|string == h.id|string }}>{{ h.name }}</option>{% endfor %}</select></div>{% endif %}
+ <div class="col-md-2"><label class="form-label small">Category</label><select name="category" class="form-select"><option value="">All</option>{% for c in categories %}<option {{ 'selected' if request.args.get('category') == c }}>{{ c }}</option>{% endfor %}</select></div>{% endif %}
+ <div class="col-auto"><button class="btn btn-primary">Apply</button></div></form></div></div>
+<div class="card"><div class="card-header d-flex justify-content-between align-items-center">{{ title }} <span class="badge bg-secondary">{{ rows|length }} rows</span>
+ <div class="no-print d-flex gap-2"><a class="btn btn-sm btn-outline-primary" href="?{{ dict(request.args.to_dict(), format='csv')|urlencode }}"><i class="bi bi-filetype-csv"></i> CSV</a>
+ <a class="btn btn-sm btn-outline-primary" href="?{{ dict(request.args.to_dict(), format='xlsx')|urlencode }}"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+ <button class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button></div></div>
+<div class="table-responsive"><table class="table table-sm table-striped mb-0"><thead><tr>{% for c in cols %}<th>{{ c }}</th>{% endfor %}</tr></thead><tbody>
+{% for row in rows %}<tr>{% for c in row %}<td>{{ c }}</td>{% endfor %}</tr>
+{% else %}<tr><td colspan="{{ cols|length }}">{{ empty('bar-chart','No data for the selected filters.') }}</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

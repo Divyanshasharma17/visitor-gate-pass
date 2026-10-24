@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% from "_macros.html" import field, csrf, empty %}
+{% set title = 'Departments' %}{% set crumbs = [('Administration', None), ('Departments', None)] %}
+{% block content %}
+<div class="row g-3"><div class="col-lg-4"><div class="card"><div class="card-header">Add department</div><div class="card-body">
+<form method="post" novalidate>{{ form.hidden_tag() }}{{ field(form.name) }}{{ field(form.code) }}<button class="btn btn-primary">Add</button></form></div></div></div>
+<div class="col-lg-8"><div class="card"><div class="table-responsive"><table class="table mb-0 align-middle"><thead><tr><th>Name</th><th>Code</th><th>Employees</th><th></th></tr></thead><tbody>
+{% for d in depts %}<tr><td>{{ d.name }}</td><td>{{ d.code or '-' }}</td><td>{{ d.users|length }}</td><td class="text-end">
+<form method="post" action="{{ url_for('admin.department_delete', did=d.id) }}" data-confirm="Delete department {{ d.name }}?">{{ csrf() }}<button class="btn btn-sm btn-outline-danger" {{ 'disabled' if d.users or d.requests }}>Delete</button></form></td></tr>
+{% else %}<tr><td colspan="4">{{ empty('diagram-3','No departments yet.') }}</td></tr>{% endfor %}</tbody></table></div></div></div></div>
+{% endblock %}

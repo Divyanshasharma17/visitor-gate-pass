@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% from "_macros.html" import badge, pager, empty, csrf %}
+{% set title = 'Approval Inbox' %}{% set crumbs = [('Approvals', None)] %}
+{% block content %}
+<ul class="nav nav-pills mb-3"><li class="nav-item"><a class="nav-link {{ 'active' if tab=='pending' }}" href="?tab=pending">Pending</a></li>
+<li class="nav-item"><a class="nav-link {{ 'active' if tab!='pending' }}" href="?tab=history">Decided</a></li></ul>
+<div class="card"><div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+<thead><tr><th>Request</th><th>Visitor</th><th>Date</th><th>Purpose</th><th>Status</th><th class="text-end">Action</th></tr></thead><tbody>
+{% for q in pg.items %}<tr><td><a href="{{ url_for('visitors.detail', req_id=q.id) }}">{{ q.request_no }}</a></td>
+<td>{{ q.visitor.full_name }}<div class="small text-muted">{{ q.visitor.company or '' }} · host {{ q.host.name }}</div></td>
+<td>{{ q.visit_date|d }}<div class="small text-muted">{{ q.expected_arrival|t }}</div></td><td class="text-truncate" style="max-width:200px">{{ q.purpose }}</td>
+<td>{{ badge(q.approval_status) }}</td>
+<td class="text-end">{% if q.approval_status == 'pending' %}
+ <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#m{{ q.id }}a">Approve</button>
+ <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#m{{ q.id }}r">Reject</button>{% endif %}</td></tr>
+{% else %}<tr><td colspan="6">{{ empty('check2-circle','Nothing here. You are all caught up.') }}</td></tr>{% endfor %}</tbody></table></div></div>{{ pager(pg) }}
+{% for q in pg.items if q.approval_status == 'pending' %}{% for d, s, label, color in [('approved','a','Approve','success'),('rejected','r','Reject','danger')] %}
+<div class="modal fade" id="m{{ q.id }}{{ s }}" tabindex="-1"><div class="modal-dialog"><form class="modal-content" method="post" action="{{ url_for('approvals.decide', req_id=q.id) }}">
+ {{ csrf() }}<input type="hidden" name="decision" value="{{ d }}">
+ <div class="modal-header"><h5 class="modal-title">{{ label }} {{ q.visitor.full_name }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+ <div class="modal-body"><label class="form-label">Comments{% if d=='rejected' %} (required){% endif %}</label><textarea name="comments" class="form-control" rows="3" {{ 'required' if d=='rejected' }}></textarea></div>
+ <div class="modal-footer"><button class="btn btn-{{ color }}">{{ label }}</button></div></form></div></div>
+{% endfor %}{% endfor %}
+{% endblock %}

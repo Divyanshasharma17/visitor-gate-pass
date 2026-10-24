@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% from "_macros.html" import badge, csrf %}
+{% set title = req.request_no %}{% set crumbs = [('Visitors', url_for('visitors.list_')), (req.request_no, None)] %}
+{% block content %}
+{% set r = current_user.role %}
+{% set can_decide = req.approval_status == 'pending' and (r == 'admin' or req.host_id == current_user.id) %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+ <h4 class="mb-0" style="color:var(--navy)">{{ req.request_no }} {{ badge(req.approval_status) }} {{ badge(req.visit_status) }}</h4>
+ <div class="d-flex flex-wrap gap-2">
+  {% if req.approval_status == 'draft' %}<form method="post" action="{{ url_for('visitors.submit', req_id=req.id) }}">{{ csrf() }}<button class="btn btn-primary">Submit for approval</button></form>{% endif %}
+  {% if req.approval_status in ('draft','pending') %}<a class="btn btn-outline-primary" href="{{ url_for('visitors.edit', req_id=req.id) }}">Edit</a>{% endif %}
+  {% if req.gate_pass %}<a class="btn btn-outline-primary" href="{{ url_for('visitors.pass_view', req_id=req.id) }}"><i class="bi bi-qr-code"></i> Gate pass</a>{% endif %}
+  {% if can_decide %}<button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal">Approve</button>
+   <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject</button>{% endif %}
+  {% if req.approval_status in ('draft','pending','approved') and req.visit_status == 'scheduled' %}
+   <form method="post" action="{{ url_for('visitors.cancel', req_id=req.id) }}" data-confirm="Cancel this visit? Any gate pass will be revoked.">{{ csrf() }}<input type="hidden" name="reason" value="Cancelled by {{ current_user.name }}"><button class="btn btn-outline-danger">Cancel visit</button></form>{% endif %}
+ </div></div>
+<div class="row g-3">
+ <div class="col-lg-6"><div class="card h-100"><div class="card-header">Visitor</div><div class="card-body">
+  <div class="d-flex gap-3">{% if req.visitor.photo_filename %}<img src="{{ url_for('visitors.photo', filename=req.visitor.photo_filename) }}" class="rounded" style="width:90px;height:90px;object-fit:cover" alt="Visitor">{% endif %}
+  <div><h5 class="mb-1">{{ req.visitor.full_name }}</h5><div>{{ req.visitor.company or '-' }}</div><div class="text-muted">{{ req.visitor.mobile }} {{ req.visitor.email or '' }}</div></div></div>
+  <hr><dl class="row mb-0 small"><dt class="col-5">Category</dt><dd class="col-7">{{ req.category }}</dd>
+  <dt class="col-5">Companions</dt><dd class="col-7">{{ req.companions }}</dd>
+  {% if req.group_members %}<dt class="col-5">Group members</dt><dd class="col-7" style="white-space:pre-line">{{ req.group_members }}</dd>{% endif %}
+  <dt class="col-5">Vehicle</dt><dd class="col-7">{{ req.vehicle_no or '-' }}</dd>
+  <dt class="col-5">Document ref.</dt><dd class="col-7">{{ req.document_ref or '-' }}</dd></dl></div></div></div>
+ <div class="col-lg-6"><div class="card h-100"><div class="card-header">Visit</div><div class="card-body"><dl class="row mb-0 small">
+  <dt class="col-5">Host</dt><dd class="col-7">{{ req.host.name }}</dd><dt class="col-5">Department</dt><dd class="col-7">{{ req.department.name }}</dd>
+  <dt class="col-5">Date</dt><dd class="col-7">{{ req.visit_date|d }}</dd><dt class="col-5">Expected</dt><dd class="col-7">{{ req.expected_arrival|t }} – {{ req.expected_departure|t }}</dd>
+  <dt class="col-5">Purpose</dt><dd class="col-7">{{ req.purpose }}</dd><dt class="col-5">Type</dt><dd class="col-7">{{ 'Walk-in' if req.is_walkin else 'Pre-registered' }}</dd>
+  <dt class="col-5">Created by</dt><dd class="col-7">{{ req.created_by.name }} · {{ req.created_at|dt }}</dd>
+  {% if req.cancel_reason %}<dt class="col-5">Cancel reason</dt><dd class="col-7">{{ req.cancel_reason }}</dd>{% endif %}
+  {% if req.log %}<dt class="col-5">Entry</dt><dd class="col-7">{{ req.log.entry_time|dt }}</dd><dt class="col-5">Exit</dt><dd class="col-7">{{ req.log.exit_time|dt }}</dd>{% endif %}
+ </dl></div></div></div>
+ <div class="col-12"><div class="card"><div class="card-header">Approval history</div><ul class="list-group list-group-flush">
+  {% for a in req.approvals %}<li class="list-group-item small">{{ badge(a.decision) }} by <b>{{ a.approver.name if a.approver else 'System policy' }}</b> · {{ a.decided_at|dt }}{% if a.comments %}<br><span class="text-muted">“{{ a.comments }}”</span>{% endif %}</li>
+  {% else %}<li class="list-group-item text-muted small">No decisions recorded yet.</li>{% endfor %}</ul></div></div>
+</div>
+{% if can_decide %}
+{% for d, label, color in [('approved','Approve','success'),('rejected','Reject','danger')] %}
+<div class="modal fade" id="{{ 'approveModal' if d == 'approved' else 'rejectModal' }}" tabindex="-1"><div class="modal-dialog"><form class="modal-content" method="post" action="{{ url_for('approvals.decide', req_id=req.id) }}">
+ {{ csrf() }}<input type="hidden" name="decision" value="{{ d }}"><input type="hidden" name="next" value="{{ url_for('visitors.detail', req_id=req.id) }}">
+ <div class="modal-header"><h5 class="modal-title">{{ label }} visit</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+ <div class="modal-body"><label class="form-label">Comments{% if d == 'rejected' %} (required){% endif %}</label><textarea name="comments" class="form-control" rows="3" {{ 'required' if d == 'rejected' }}></textarea></div>
+ <div class="modal-footer"><button class="btn btn-{{ color }}">{{ label }}</button></div></form></div></div>
+{% endfor %}{% endif %}
+{% endblock %}
