@@ -1,9 +1,7 @@
-# Visitor & Gate Pass Management System (Flask)
+# GateFlow 
 
 A digital visitor register for offices, factories and campuses: visitor registration, host approval,
 QR gate passes, gate check-in/check-out, dashboards, reports, watchlist and audit logging.
-
-> Screenshots: `docs/screenshots/login.png`, `dashboard.png`, `register.png`, `gate-verify.png`, `pass.png` *(placeholders - add your own)*
 
 ## Features
 - **Roles** (server-side RBAC + object-level checks): Administrator, Receptionist, Host, Security Guard
