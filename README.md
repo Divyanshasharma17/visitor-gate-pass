@@ -28,7 +28,6 @@ flask db upgrade                                       # apply migrations
 python seed.py                                         # sample data (or: flask seed)
 flask run                                              # http://127.0.0.1:5000
 ```
-Changing models later: `flask db migrate -m "msg" && flask db upgrade`.
 
 ### Sample accounts (seed)
 | Role | Email | Password |
@@ -37,32 +36,3 @@ Changing models later: `flask db migrate -m "msg" && flask db upgrade`.
 | Receptionist | reception@vgp-demo.com | Recept@123 |
 | Host | host1@vgp-demo.com (also host2, host3) | Host@1234 |
 | Guard | guard@vgp-demo.com | Guard@123 |
-
-Change or delete these before any real deployment.
-
-## Maintenance commands
-- `flask maintenance` – expire passes, mark missed visits, send upcoming-visit reminders (also runs on dashboard load). Schedule via cron every 10 min.
-- `flask purge-old-records [--days N]` – anonymise visitors beyond the retention period (default from Settings). Schedule daily.
-
-## Tests
-```bash
-pytest -q          # uses an isolated in-memory SQLite DB (override with TEST_DATABASE_URL to use a PostgreSQL test DB)
-```
-Covers auth/permissions, registration, approval/rejection, expiry/revocation, invalid tokens, duplicate check-in/out,
-atomic concurrent claim, reports filtering, exports, audit logs.
-
-## Deployment
-1. Set `FLASK_CONFIG=production`, a long random `SECRET_KEY`, PostgreSQL `DATABASE_URL`, SMTP variables (optional).
-2. Run behind HTTPS (required for camera scanning and secure cookies): `gunicorn -w 3 -b 127.0.0.1:8000 run:app` behind Nginx
-   with TLS (Let's Encrypt). Set `RATELIMIT_STORAGE_URI=redis://...` when running several workers.
-3. `flask db upgrade`, create the first admin (`python seed.py` on an empty DB then delete demo users, or insert via `flask shell`).
-4. Back up the database and `app/uploads/` (visitor photos are served only through authenticated routes).
-5. Add cron entries for `flask maintenance` and `flask purge-old-records`.
-
-## Privacy notes
-Collect only what policy needs (the "document reference" field is optional - never store full ID numbers unless legally required).
-Display a privacy notice to visitors, set the retention period in Settings, and review watchlist entries regularly.
-
-## Structure
-`app/` blueprints (`auth, dashboard, visitors, approvals, gate, reports, admin`), `models/`, `services/` (approval, gate pass, gate,
-notification, audit, maintenance), `templates/`, `static/`; `migrations/`; `tests/`; `config.py`; `run.py`; `seed.py`.
